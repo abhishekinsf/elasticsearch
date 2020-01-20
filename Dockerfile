@@ -1,18 +1,19 @@
-FROM maven:3.5.2-jdk-8-alpine AS MAVEN_BUILD
+FROM alpine/git
+WORKDIR /test
+RUN git clone https://github.com/abhishekinsf/elasticsearch.git
 
-Maintainer Abhishek
+FROM maven:3.5.2-jdk-8-alpine
 
-COPY pom.xml /build/
-COPY  src /build/src/
+WORKDIR /test
 
-WORKDIR /build/
-
-RUN mvn package
+COPY --from=0 /test/elasticsearch /test
+RUN ["mvn", "package", "-DskipTests=true"]
 
 FROM openjdk:8-jre-alpine
 
-WORKDIR /app
+WORKDIR /test
 
-COPY --from=MAVEN_BUILD /build/target/docker-elastic-search-boot.jar /app/
+COPY --from=1 /test/target/*.jar /test
 
-ENTRYPOINT ["java", "-jar", "docker-elastic-search-boot.jar"]
+ENTRYPOINT ["java", "-jar", "*.jar"]
+
